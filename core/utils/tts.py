@@ -20,7 +20,6 @@ class TTS(ABC):
     def __init__(self, config, delete_audio_file):
         self.delete_audio_file = delete_audio_file
         self.output_file = config.get("output_file")
-        self.delete_audio_file = delete_audio_file
 
     @abstractmethod
     def generate_filename(self):
@@ -218,6 +217,9 @@ def create_instance(class_name, *args, **kwargs):
 
 
 if __name__ == "__main__":
+    """
+      响应速度测试
+    """
     config = read_config(get_project_dir() + "config.yaml")
     tts = create_instance(
         config["selected_module"]["TTS"],
@@ -225,6 +227,9 @@ if __name__ == "__main__":
         config["delete_audio"]
     )
     tts.output_file = get_project_dir() + tts.output_file
-    file_path = tts.to_tts("你好，测试")
-    print(file_path)
-    print(tts.wav_to_opus_data(file_path))
+    start = datetime.now()
+    file_path = tts.to_tts("你好，测试,我是人工智能小智")
+    print("语音合成耗时：" + str(datetime.now() - start))
+    start = datetime.now()
+    tts.wav_to_opus_data(file_path)
+    print("语音opus耗时：" + str(datetime.now() - start))

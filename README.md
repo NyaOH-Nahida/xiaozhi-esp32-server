@@ -22,50 +22,174 @@
 - 下载`xiaozhi-esp32`项目，把`接口地址`修改成本项目地址，然后编译，把新固件烧录到硬件设备上。
 - 启动设备，查看电脑或服务器的控制台，如果看到日志，说明成功连到本项目的接口了。
 
+## 警告
+
+本项目成立时间较短，还未通过网络安全测评，请勿在生产环境中使用。
+
 ## 功能清单
 
 ## 已实现
 
 - `xiaozhi-esp32` 通信 WebSocket 协议
-- 支持实时打断对话，试一下在聊天的时候说一句`你好小智`
+- 支持唤醒对话、手动对话、实时打断对话
 - 支持国语、粤语、英语、日语、韩语 5 种语言识别（FunASR（默认））
-- 自由更换 LLM（支持ChatGLM（默认）、Dify、DeepSeek）
+- 自由更换 LLM（支持ChatGLM（默认）、阿里百炼、Dify、DeepSeek）
 - 自由更换 TTS（支持EdgeTTS（默认）、火山引擎豆包TTS）
 
 ## 正在实现
 
-- 按键手动对话
 - 长时间不聊天进入休眠状态
 - 对话记忆
+- 更换心情模式
 
-## 本项目依赖服务
+## 本项目支持的平台/组件列表
 
-| 类型  | 服务名称       | 使用方式 | 收费模式    | 备注                                                         |
-|:----|:-----------|:----:|:--------|:-----------------------------------------------------------|
-| LLM | DeepSeek   | 接口调用 | 消耗token | [点击申请密钥](https://platform.deepseek.com/)                   |
-| LLM | Dify       | 接口调用 | 消耗token | 本地化部署                                                      |
-| LLM | ChatGLMLLM | 接口调用 | 免费      | [点击创建密钥](https://bigmodel.cn/usercenter/proj-mgmt/apikeys) |
-| TTS | DoubaoTTS  | 接口调用 | 消耗token | [点击创建密钥](https://console.volcengine.com/speech/service/8)  |
-| TTS | EdgeTTS    | 接口调用 | 免费      |                                                            |
-| VAD | SileroVAD  | 本地使用 | 免费      |                                                            |
-| ASR | FunASR     | 本地使用 | 免费      |                                                            |
+| 类型  | 平台名称      | 使用方式 | 收费模式    | 备注                                                              |
+|:----|:----------|:----:|:--------|:----------------------------------------------------------------|
+| LLM | 阿里百炼      | 接口调用 | 消耗token | [点击申请密钥](https://bailian.console.aliyun.com/?apiKey=1#/api-key) |
+| LLM | 深度求索      | 接口调用 | 消耗token | [点击申请密钥](https://platform.deepseek.com/)                        |
+| LLM | Dify      | 接口调用 | 消耗token | 本地化部署                                                           |
+| LLM | 智谱        | 接口调用 | 免费      | [点击创建密钥](https://bigmodel.cn/usercenter/proj-mgmt/apikeys)      |
+| TTS | 火山引擎      | 接口调用 | 消耗token | [点击创建密钥](https://console.volcengine.com/speech/service/8)       |
+| TTS | EdgeTTS   | 接口调用 | 免费      |                                                                 |
+| VAD | SileroVAD | 本地使用 | 免费      |                                                                 |
+| ASR | FunASR    | 本地使用 | 免费      |                                                                 |
 
 # 部署方式
 
-本项目暂时只支持本地源码运行，未来将支持docker快速部署。
+本项目支持docker快速部署和本地源码运行。如果您主要是想快速体验，推荐使用docker部署。如果想深入了解本项目，推荐本地源码运行。
 
-## 本地源码运行
+## 方式一：docker快速部署
+
+docker镜像已支持x86架构、arm64架构的CPU，支持在国产操作系统上运行。
+
+### 1. 安装docker
+
+如果您的电脑还没安装docker，可以按照这里的教程安装：[docker安装](https://www.runoob.com/docker/ubuntu-docker-install.html)
+
+### 2. 创建目录
+
+安装完后，你需要为这个项目找一个安放配置文件的目录，我们暂且称它为`项目目录`，这个目录最好是一个新建的空的目录。
+
+### 3. 下载配置文件
+
+用浏览器打开[这个链接](https://github.com/xinnan-tech/xiaozhi-esp32-server/blob/main/config.yaml)。
+
+在页面的右侧找到名称为`RAW`按钮，在`RAW`按钮的旁边，找到下载的图标，点击下载按钮，下载`config.yaml`文件。 把文件下载到你的
+`项目目录`。
+
+### 4. 修改配置文件
+
+修改刚才你下载的`config.yaml`文件，配置本项目所需的各种参数。默认的LLM使用的是`ChatGLMLLM`，你需要配置密钥，才能启动。
+
+默认的TTS使用的是`EdgeTTS`，这个无需配置，如果你需要更换成`豆包TTS`，则需要配置密钥。
+
+配置说明：这里是各个功能使用的默认组件，例如LLM默认使用`ChatGLMLLM`模型。如果需要切换模型，就是改对应的名称。
+
+本项目的默认配置原则是成本最低配置原则（`glm-4-flash`和`EdgeTTS`都是免费的），如果需要更优的更快的搭配，需要自己结合部署环境切换各组件的使用。
+
+```
+selected_module:
+  ASR: FunASR
+  VAD: SileroVAD
+  LLM: ChatGLMLLM
+  TTS: EdgeTTS
+```
+
+比如修改`LLM`使用的组件，就看本项目支持哪些`LLM`，如下就是支持`DeepSeekLLM`、`ChatGLMLLM`。你们在`selected_module`修改成对应的LLM
+
+```
+LLM:
+  AliLLM:
+    ...
+  DeepSeekLLM:
+    ...
+  ChatGLMLLM:
+    ...
+  DifyLLM:
+    ...
+```
+
+有些服务，比如如果你使用`Dify`、`豆包的TTS`，是需要密钥的，记得在配置文件加上哦！
+
+### 5. 执行docker命令
+
+打开命令行工具，`cd` 进入到你的`项目目录`，执行以下命令
+
+```
+#如果你是linux，执行
+ls
+#如果你是windows，执行
+dir
+```
+
+如果你能看到`config.yaml`文件，确确实实进入到了`项目目录`，接着执行以下命令：
+
+```
+docker run -d --name xiaozhi-esp32-server --restart always --security-opt seccomp:unconfined -p 8000:8000 -v $(pwd)/config.yaml:/opt/xiaozhi-es32-server/config.yaml ccr.ccs.tencentyun.com/xinnan/xiaozhi-esp32-server:latest
+```
+
+如果首次执行，可能需要几分钟时间，你要耐心等待他完成拉取。正常拉取完成后，你可以在命令行执行以下命令查看服务是否启动成功
+
+```
+docker ps
+```
+
+如果你能看到`xiaozhi-server`，说明服务启动成功。那你还可以进一步执行以下命令，查看服务的日志
+
+```
+docker logs -f xiaozhi-esp32-server
+```
+
+如果你能看到，类似以下日志,则是本项目服务启动成功的标志。
+
+```
+2025-xx-xx xx:51:59,492 - core.server - INFO - Server is running at ws://xx.xx.xx.xxx:8000
+2025-xx-xx xx:51:59,516 - websockets.server - INFO - server listening on 0.0.0.0:8000
+```
+
+接下来，你就可以开始 `编译esp32固件`了，请往下翻，翻到编译`esp32固件`相关章节。那么由于你是用docker部署，你要自己查看自己本机电脑的ip是多少。
+正常来说，假设你的ip是`192.168.1.25`，那么你的接口地址就是：`ws://192.168.1.25:8000`。这个信息很有用的，后面`编译esp32固件`
+需要用到。
+
+后期如果想升级版本，可以这么操作
+
+1、备份好`config.yaml`文件，一些关键的配置到时复制到新的`config.yaml`文件里。
+
+2、执行以下命令
+
+```
+docker stop xiaozhi-esp32-server
+docker rm xiaozhi-esp32-server
+docker rmi ccr.ccs.tencentyun.com/xinnan/xiaozhi-esp32-server:latest
+```
+
+3.按本教程重新来一遍
+
+## 方式二：本地源码运行
 
 ### 1.安装基础环境
 
-本项目使用`python`语言开发，依赖`python`、`conda`环境，运行本项目需安装`python`、`conda`。
-
-安装后使用`conda`创建以下环境
+本项目使用`conda`管理依赖环境，安装好后，开始执行以下命令。
 
 ```
 conda remove -n xiaozhi-esp32-server --all -y
 conda create -n xiaozhi-esp32-server python=3.10 -y
 conda activate xiaozhi-esp32-server
+```
+
+执行以上命令后， 如果你的电脑是Windows或Mac，执行下面的语句：
+
+```
+conda activate xiaozhi-esp32-server
+conda install conda-forge::libopus
+conda install conda-forge::ffmpeg
+```
+
+如果你的电脑是ubuntu，执行下面的语句：
+
+```
+apt-get install libopus0 ffmpeg 
 ```
 
 ### 2.安装本项目依赖
@@ -80,8 +204,12 @@ pip install -r requirements.txt
 
 ### 3.下载语音识别模型
 
-下载模型文件[SenseVoiceSmall](https://modelscope.cn/models/iic/SenseVoiceSmall/resolve/master/model.pt)到
-`model/SenseVoiceSmall`目录下
+默认使用`SenseVoiceSmall`模型，进行语音转文字。因为模型较大，需要独立下载，下载后把`model.pt`文件放在`model/SenseVoiceSmall`
+目录下。下面两个下载路线任选一个。
+
+- 线路一：阿里魔塔下载[SenseVoiceSmall](https://modelscope.cn/models/iic/SenseVoiceSmall/resolve/master/model.pt)
+- 线路二：百度网盘下载[SenseVoiceSmall](https://pan.baidu.com/share/init?surl=QlgM58FHhYv1tFnUT_A8Sg&pwd=qvna) 提取码:
+  `qvna`
 
 ### 4.配置项目
 
@@ -89,6 +217,8 @@ pip install -r requirements.txt
 默认的TTS使用的是`EdgeTTS`，这个无需配置，如果你需要更换成`豆包TTS`，则需要配置密钥。
 
 配置说明：这里是各个功能使用的默认组件，例如LLM默认使用`ChatGLMLLM`模型。如果需要切换模型，就是改对应的名称。
+
+本项目的默认配置仅是成本最低配置（`glm-4-flash`和`EdgeTTS`都是免费的），如果需要更优的更快的搭配，需要自己结合部署环境切换各组件的使用。
 
 ```
 selected_module:
@@ -117,6 +247,8 @@ LLM:
 启动项目
 
 ```
+# 确保在本项目的根目录下执行
+conda activate xiaozhi-esp32-server
 python app.py
 ```
 
@@ -129,13 +261,13 @@ python app.py
 
 其中上面的`ws://192.168.1.25:8000`就是本项目提供的接口地址了，当然你自己的机器和我的是不一样的，记得要找到自己的地址。
 
-### 6.编译esp32固件
+# 编译esp32固件
 
 1. 下载`xiaozhi-esp32`
    项目，按照这个教程配置项目环境[《Windows搭建 ESP IDF 5.3.2开发环境以及编译小智》](https://icnynnzcwou8.feishu.cn/wiki/JEYDwTTALi5s2zkGlFGcDiRknXf)
 
 2. 打开`xiaozhi-esp32/main/Kconfig.projbuild`文件，找到`WEBSOCKET_URL`的`default`的内容，把`wss://api.tenclass.net`
-   改成你自己的地址，例如
+   改成你自己的地址，例如，我的接口地址是`ws://192.168.1.25:8000`，就把内容改成这个。
 
 修改前：
 
@@ -169,6 +301,7 @@ idf.py set-target esp32s3
 # 进入菜单配置
 idf.py menuconfig
 ```
+
 ![图片](docs/images/build_setting01.png)
 
 进入菜单配置后，再进入`Xiaozhi Assistant`，将`CONNECTION_TYPE`设置为`Websocket`
@@ -207,20 +340,83 @@ https://espressif.github.io/esp-launchpad/
 
 ## 1、TTS 经常失败，经常超时
 
-建议：如果`EdgeTTS`慢或经常失败，可以更换成`火山引擎的豆包TTS`，如果两个都慢，可能所处的网络环境需要优化一下。
+建议：如果`EdgeTTS`经常失败，先检查一下是否用了梯子。
+如果用的是`火山引擎的豆包TTS`经常失败，最好使用付费版本，因为他们的测试版本只有2个并发。
 
-## 2、大模型回复有点慢
+## 2、我想通过小智控制电灯、空调、远程开关机等操作。
 
-建议：大模型和TTS都是依赖接口，如果网络环境不佳，可以考虑换成本地模型。或多尝试切换不同的接口模型。
+建议：在配置文件里，将`LLM`设置成`DifyLLM`，然后通过`Dify`编排智能体实现。
 
-## 3、为啥我的ChatGLMLLM回复有点问题，明明它才是小智，却把我当小智。
+## 3、我说话很慢，我停顿一下，小智老是抢我的话，咋办。
 
-建议：第一步可以先`配置文件`里的调整提示词。第二步，`配置文件`中用的模型是免费的模型：`glm-4-flash`，可以考虑换成收费版本的。
+建议：在配置文件里，找到这一段，将`min_silence_duration_ms`值改大一点，比如改成`1000`。
 
-## 4、更多问题，可联系我们反馈
+```
+VAD:
+  SileroVAD:
+    threshold: 0.5
+    model_dir: models/snakers4_silero-vad
+    min_silence_duration_ms: 700  # 如果说话停顿比较长，可以把这个值设置大一些
+```
+
+## 4、如何才能提高小智对话响应速度？
+
+本项目的默认配置，是成本最低的配置。建议刚上手的童鞋，使用默认的免费模型，先解决了“跑得动”的问题，再解决“跑得快”的问题。
+如果要提高响应速度，需要更换各组件来解决。以下是本项目各组件的响应速度测试Tip。
+
+以下内容和结论仅供参考，不构成任何形式的承诺或保证。
+
+### LLM 类组件
+
+| 排名 | 组件名称        | 响应速度(ms) |
+|:---|:------------|:--------:|
+| 1  | AliLLM      |   630    |
+| 2  | ChatGLMLLM  |   2000   | 
+| 3  | DeepSeekLLM |   6800   | 
+
+```
+测试地点：广东省佛山市禅城区
+测试时间：2025年2月9日 16:12
+宽带运营商：中国移动
+测试方法：更换配置后，执行core/utils/llm.py文件
+```
+
+### TTS 类组件
+
+| 排名 | 组件名称      | 响应速度(ms) |
+|:---|:----------|:--------:|
+| 1  | DoubaoTTS |   645    |
+| 2  | EdgeTTS   |   1019   |
+
+```
+测试地点：广东省佛山市禅城区
+测试时间：2025年2月9日 16:12
+宽带运营商：中国移动
+测试方法：更换配置后，执行core/utils/tts.py文件
+
+```
+
+### 结论
+
+`2025年2月9日`，如果我的电脑在`广东省佛山市禅城区`，且使用的是`中国移动`网络，我会优先使用：
+
+- LLM：`AliLLM`
+- TTS：`DoubaoTTS`
+
+## 5、更多问题，可联系我们反馈
 
 ![图片](docs/images/wechat.jpg)
 
 # 鸣谢
 
 - 本项目受[百聆语音对话机器人](https://github.com/wwbin2017/bailing)项目启发，基于该项目的基础思路完成实现。
+- 感谢[腾讯云](https://cloud.tencent.com/)为本次项目提供免费docker镜像空间。
+- 感谢[十方融海](https://www.tenclass.com/)在小智通讯协议上提供充分的文档支持。
+
+<a href="https://star-history.com/#xinnan-tech/xiaozhi-esp32-server&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=xinnan-tech/xiaozhi-esp32-server&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=xinnan-tech/xiaozhi-esp32-server&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=xinnan-tech/xiaozhi-esp32-server&type=Date" />
+ </picture>
+</a>

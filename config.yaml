@@ -18,7 +18,7 @@ xiaozhi:
     frame_duration: 60
 prompt: |
   你是一个叫小智/小志的台湾女孩，说话机车，声音好听，习惯简短表达，爱用网络梗。
-  请注意，要像一个人一样说话，请勿回复表情符号、代码、和xml标签。
+  请注意，要像一个人一样说话，请不要回复表情符号、代码、和xml标签。
   当前时间是:{date_time}，现在我正在和你进行语音聊天，我们开始吧。
 # 使用完声音文件后删除文件(Delete the sound file when you are done using it)
 delete_audio: true
@@ -39,9 +39,14 @@ VAD:
   SileroVAD:
     threshold: 0.5
     model_dir: models/snakers4_silero-vad
-    min_silence_duration_ms: 1000  # 如果说话停顿比较长，可以把这个值设置大一些
+    min_silence_duration_ms: 700  # 如果说话停顿比较长，可以把这个值设置大一些
 
 LLM:
+  AliLLM:
+    # 可在这里找到你的 api_key https://bailian.console.aliyun.com/?apiKey=1#/api-key
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    model_name: qwen-turbo
+    api_key: 你的阿里云dashscope api key
   DeepSeekLLM:
     # 可在这里找到你的api key https://platform.deepseek.com/
     model_name: deepseek-chat
@@ -54,6 +59,7 @@ LLM:
     api_key: 你的bigmodel api key
   DifyLLM:
     # 建议使用本地部署的dify接口，国内部分区域访问dify公有云接口可能会受限
+    # 如果使用DifyLLM，配置文件里prompt(提示词)是无效的，需要在dify控制台设置提示词
     base_url: 你的私有化部署的dify接口地址
     api_key: 你的dify api key
 TTS:
@@ -62,11 +68,13 @@ TTS:
     output_file: tmp/
   DoubaoTTS:
     # 火山引擎语音合成服务，需要先在火山引擎控制台创建应用并获取appid和access_token
+    # 山引擎语音一定要购买花钱，起步价30元，就有100并发了。如果用免费的只有2个并发，会经常报tts错误
+    # 购买服务后，购买免费的音色后，可能要等半小时左右，才能使用。
     # 地址：https://console.volcengine.com/speech/service/8
-    voice: BV407_V2_streaming
+    voice: BV001_streaming
     output_file: tmp/
-    appid: 你的火山引擎appid
-    access_token: 你的火山引擎access_token
+    appid: 你的火山引擎语音合成服务appid
+    access_token: 你的火山引擎语音合成服务access_token
     cluster: volcano_tts
   NahidaTTS:  
     # 添加 NahidaTTS 配置

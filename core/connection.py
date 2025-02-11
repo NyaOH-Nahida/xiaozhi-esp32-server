@@ -12,8 +12,6 @@ from collections import deque
 from core.utils.util import is_segment
 from core.utils.dialogue import Message, Dialogue
 from core.handle.textHandle import handleTextMessage
-from core.handle.abortHandle import handleAbortMessage
-from core.handle.helloHandle import handleHelloMessage
 from core.utils.util import get_string_no_punctuation_or_emoji
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from core.handle.audioHandle import handleAudioMessage, sendAudioMessage
@@ -29,7 +27,10 @@ class ConnectionHandler:
         self.session_id = None
         self.prompt = None
         self.welcome_msg = None
+
+        # 客户端状态相关
         self.client_abort = False
+        self.client_listen_mode = "auto"
 
         # 线程任务相关
         self.loop = asyncio.get_event_loop()
@@ -91,21 +92,9 @@ class ConnectionHandler:
     async def _route_message(self, message):
         """消息路由"""
         if isinstance(message, str):
-            await self._handle_text(message)
+            await handleTextMessage(self, message)
         elif isinstance(message, bytes):
             await handleAudioMessage(self, message)
-
-    async def _handle_text(self, message):
-        """处理文本消息"""
-        self.logger.info(f"收到文本消息：{message}")
-        try:
-            msg_json = json.loads(message)
-            if msg_json["type"] == "hello":
-                await handleHelloMessage(self, "你好")
-            if msg_json["type"] == "abort":
-                await handleAbortMessage(self)
-        except json.JSONDecodeError:
-            await handleTextMessage(self, message)
 
     def _initialize_components(self):
         self.prompt = self.config["prompt"]
@@ -113,7 +102,7 @@ class ConnectionHandler:
         if "{date_time}" in self.prompt:
             date_time = time.strftime("%Y-%m-%d %H:%M", time.localtime())
             self.prompt = self.prompt.replace("{date_time}", date_time)
-        self.dialogue.put(Message(role="user", content=self.prompt))
+        self.dialogue.put(Message(role="system", content=self.prompt))
 
     def chat(self, query):
         self.dialogue.put(Message(role="user", content=query))
@@ -122,7 +111,7 @@ class ConnectionHandler:
         # 提交 LLM 任务
         try:
             start_time = time.time()  # 记录开始时间
-            llm_responses = self.llm.response(self, self.dialogue.get_llm_dialogue())
+            llm_responses = self.llm.response(self.session_id, self.dialogue.get_llm_dialogue())
         except Exception as e:
             self.logger.error(f"LLM 处理出错 {query}: {e}")
             return None
@@ -164,12 +153,17 @@ class ConnectionHandler:
             text = None
             try:
                 future = self.tts_queue.get()
+                if future is None:
+                    continue
                 text = None
                 try:
+                    self.logger.debug("正在处理TTS任务...")
                     tts_file, text = future.result(timeout=10)
+                    self.logger.debug(f"TTS文件生成完毕，文件路径: {tts_file}")
                     if os.path.exists(tts_file):
                         opus_datas, duration = self.tts.wav_to_opus_data(tts_file)
                     else:
+                        self.logger.error(f"TTS文件不存在: {tts_file}")
                         opus_datas = []
                         duration = 0
                 except TimeoutError:
@@ -186,6 +180,7 @@ class ConnectionHandler:
                 if self.tts.delete_audio_file and os.path.exists(tts_file):
                     os.remove(tts_file)
             except Exception as e:
+                self.logger.error(f"TTS任务处理错误: {e}")
                 self.clearSpeakStatus()
                 asyncio.run_coroutine_threadsafe(
                     self.websocket.send(json.dumps({"type": "tts", "state": "stop", "session_id": self.session_id})),
@@ -201,7 +196,7 @@ class ConnectionHandler:
         if tts_file is None:
             self.logger.error(f"tts转换失败，{text}")
             return None
-        self.logger.debug(f"TTS 文件生成完毕")
+        self.logger.debug(f"TTS 文件生成完毕: {tts_file}")
         return tts_file, text
 
     def clearSpeakStatus(self):
@@ -214,6 +209,7 @@ class ConnectionHandler:
 
     def recode_first_last_text(self, text):
         if not self.tts_first_text:
+            self.logger.info(f"大模型说出第一句话: {text}")
             self.tts_first_text = text
         self.tts_last_text = text
 
