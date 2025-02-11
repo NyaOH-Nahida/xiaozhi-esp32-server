@@ -149,12 +149,66 @@ class DoubaoTTS(TTS):
             file_to_save = open(output_file, "wb")
             file_to_save.write(base64.b64decode(data))
 
+class NahidaTTS(TTS):
+    def __init__(self, config, delete_audio_file):
+        super().__init__(config, delete_audio_file)
+        self.tts_url = config.get("tts_url")
+        self.retrieve_file_url = config.get("retrieve_file_url")
+        self.audio_format = config.get("audio_format", "mp3")
+        self.headers = {
+            "Accept": "application/json, text/plain, */*",
+            "Content-Type": "application/json",
+        }
+
+    def generate_filename(self, extension=".mp3"):
+        return os.path.join(self.output_file, f"tts-{datetime.now().date()}@{uuid.uuid4().hex}{extension}")
+
+    async def text_to_speak(self, text, output_file):
+        request_body = {
+            "voice_id": 1917,
+            "text": text,
+            "format": self.audio_format,
+            "to_lang": "ZH",
+            "auto_translate": 0,
+            "voice_speed": "0%",
+            "speed_factor": 1,
+            "pitch_factor": 0,
+            "rate": "1.0",
+            "client_ip": "ACGN",
+            "emotion": 1
+        }
+
+        print("正在向TTS服务发送请求...")
+        response = requests.post(self.tts_url, headers=self.headers, data=json.dumps(request_body))
+
+        if response.status_code == 200:
+            print("TTS请求成功，正在解析响应...")
+            json_response = response.json()
+            voice_path = json_response.get("voice_path")
+
+            if voice_path:
+                print(f"获取voice_path成功: {voice_path}")
+                audio_url = f"{self.retrieve_file_url}?stream=True&token=null&voice_audio_path={voice_path}"
+                print("正在下载音频文件...")
+                audio_response = requests.get(audio_url, headers=self.headers)
+
+                if audio_response.status_code == 200:
+                    with open(output_file, "wb") as audio_file:
+                        audio_file.write(audio_response.content)
+                    print(f"音频文件已成功下载到本地，保存为 {output_file}。")
+                else:
+                    print(f"获取音频文件失败，状态码: {audio_response.status_code}")
+            else:
+                print("响应中未找到voice_path。")
+        else:
+            print(f"TTS请求失败，状态码: {response.status_code}")
 
 def create_instance(class_name, *args, **kwargs):
     # 获取类对象
     cls_map = {
         "DoubaoTTS": DoubaoTTS,
         "EdgeTTS": EdgeTTS,
+        "NahidaTTS": NahidaTTS,
         # 可扩展其他TTS实现
     }
 

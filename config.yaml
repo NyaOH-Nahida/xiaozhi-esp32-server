@@ -68,3 +68,9 @@ TTS:
     appid: 你的火山引擎appid
     access_token: 你的火山引擎access_token
     cluster: volcano_tts
+  NahidaTTS:  
+    # 添加 NahidaTTS 配置
+    output_file: "tmp/"
+    tts_url: "https://u95167-bd74-2aef8085.westx.seetacloud.com:8443/flashsummary/tts"
+    retrieve_file_url: "https://u95167-9b1c-2697c52f.bjc1.seetacloud.com:8443/flashsummary/retrieveFileData"
+    audio_format: "mp3"
